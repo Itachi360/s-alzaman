@@ -394,8 +394,8 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
                             <i data-lucide="heart" class="w-3.5 h-3.5 text-white fill-current"></i>
                             <span>دعم ومتابعة الموسوعة</span>
                         </button>
-                        <!-- زر تثبيت التطبيق - يظهر فقط عند توفر إمكانية التثبيت -->
-                        <button id="install-app-btn" onclick="installPWA()" class="hidden items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-emerald-950 font-bold text-xs px-3.5 py-1.5 rounded-full border border-emerald-400/50 transition-all shadow-lg active:scale-95 glow-green-btn cursor-pointer">
+                        <!-- زر تثبيت التطبيق - ظاهر دائماً، يختفي فقط إذا كان مثبتاً بالفعل -->
+                        <button id="install-app-btn" onclick="installPWA()" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-emerald-950 font-bold text-xs px-3.5 py-1.5 rounded-full border border-emerald-400/50 transition-all shadow-lg active:scale-95 glow-green-btn cursor-pointer">
                             <i data-lucide="download" class="w-3.5 h-3.5"></i>
                             <span>تثبيت التطبيق</span>
                         </button>
@@ -1044,6 +1044,7 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
     <script>
         // ═══════════════════════════════════════════════════
         // PWA Installation — زر التثبيت داخل الواجهة
+        // الزر ظاهر دائماً، يختفي فقط إذا كان التطبيق مثبتاً فعلياً
         // ═══════════════════════════════════════════════════
         let deferredPrompt = null;
 
@@ -1062,7 +1063,7 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
 
         function showInstallButton() {
             const btn = getInstallBtn();
-            if (btn && !isStandaloneMode()) {
+            if (btn) {
                 btn.classList.remove('hidden');
                 btn.classList.add('flex');
             }
@@ -1076,12 +1077,11 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
             }
         }
 
-        // Chrome / Edge / Android — الحدث الرسمي لإمكانية التثبيت
+        // إن أُطلق الحدث الرسمي، نحتفظ به لاستخدام التثبيت الأصلي بدل التعليمات اليدوية
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            showInstallButton();
-            showInstallPromotion(); // يبقي البانر العلوي كتنبيه إضافي
+            console.log('[PWA] beforeinstallprompt جاهز — التثبيت الأصلي متاح الآن.');
         });
 
         window.addEventListener('appinstalled', () => {
@@ -1091,19 +1091,14 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
             dismissInstallBanner();
         });
 
-        function showInstallPromotion() {
-            const banner = document.getElementById('pwa-install-banner');
-            if (banner && !isStandaloneMode()) banner.classList.remove('hidden');
-        }
-
         function dismissInstallBanner() {
             const banner = document.getElementById('pwa-install-banner');
             if (banner) banner.classList.add('hidden');
         }
 
-        // الزر الرئيسي — يُستدعى من زر "تثبيت التطبيق" وبانر التثبيت
+        // الزر الرئيسي — يُستدعى من زر "تثبيت التطبيق"
         async function installPWA() {
-            // الحالة 1: لدينا الحدث الرسمي (Chrome/Edge/Android)
+            // الحالة 1: الحدث الرسمي متاح (Chrome/Edge/Android مكتملة الشروط)
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
@@ -1114,14 +1109,14 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
                 return;
             }
 
-            // الحالة 2: iOS Safari — لا يوجد حدث برمجي، نعرض تعليمات
+            // الحالة 2: iOS Safari — لا يوجد حدث برمجي إطلاقاً، نعرض تعليمات يدوية
             if (isIOS()) {
                 showIOSInstallInstructions();
                 return;
             }
 
-            // الحالة 3: متصفح لا يدعم التثبيت أو تم تجاهل الحدث
-            showGenericInstallInstructions();
+            // الحالة 3: Android/Desktop لكن الحدث لم يُطلق بعد (شروط Chrome لم تكتمل)
+            showAndroidInstallInstructions();
         }
 
         function showIOSInstallInstructions() {
@@ -1143,30 +1138,40 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
             document.body.appendChild(modal);
         }
 
-        function showGenericInstallInstructions() {
+        function showAndroidInstallInstructions() {
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4';
             modal.onclick = () => modal.remove();
             modal.innerHTML = `
                 <div class="bg-gradient-to-b from-emerald-900 to-emerald-950 rounded-2xl max-w-sm w-full border border-emerald-700 shadow-2xl p-6 text-right" onclick="event.stopPropagation()">
-                    <h3 class="text-base font-bold text-amber-400 mb-4">💻 تثبيت التطبيق</h3>
+                    <h3 class="text-base font-bold text-amber-400 mb-4">📲 تثبيت التطبيق</h3>
                     <p class="text-sm text-emerald-100 leading-relaxed mb-4">
-                        ابحث عن أيقونة <span class="text-amber-400 font-bold">⊕ تثبيت</span> أو <span class="text-amber-400 font-bold">⋮ القائمة</span> في شريط عنوان المتصفح، ثم اختر "تثبيت التطبيق" أو "Install App".
+                        التثبيت الفوري سيكون متاحاً تلقائياً خلال لحظات من تصفح الصفحة.
+                        إن لم يظهر، يمكنك التثبيت يدوياً:
                     </p>
+                    <ol class="text-sm text-emerald-100 space-y-3 list-decimal list-inside mb-5">
+                        <li>اضغط على أيقونة <span class="text-amber-400 font-bold">⋮</span> (القائمة) أعلى المتصفح</li>
+                        <li>اختر <span class="text-amber-400 font-bold">"تثبيت التطبيق"</span> أو <span class="text-amber-400 font-bold">"إضافة إلى الشاشة الرئيسية"</span></li>
+                    </ol>
                     <button onclick="this.closest('.fixed').remove()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-emerald-950 font-bold text-sm rounded-xl transition-all">فهمت، إغلاق</button>
                 </div>`;
             document.body.appendChild(modal);
         }
 
-        // عند التحميل: أظهر الزر فوراً لمستخدمي iOS (لا يوجد لديهم beforeinstallprompt)
-        // ولباقي المتصفحات كحل احتياطي — مع التحقق أن التطبيق غير مثبّت أصلاً
+        // عند التحميل: الزر ظاهر افتراضياً (HTML class="flex")
+        // نُخفيه فقط إذا اكتشفنا أن التطبيق يعمل بالفعل في وضع standalone
         window.addEventListener('DOMContentLoaded', () => {
             if (isStandaloneMode()) {
                 hideInstallButton();
                 dismissInstallBanner();
-            } else if (isIOS()) {
+            } else {
                 showInstallButton();
             }
+        });
+
+        // فحص إضافي بعد تحميل كامل الصفحة (بعض المتصفحات تحدّث display-mode متأخراً)
+        window.addEventListener('load', () => {
+            if (isStandaloneMode()) hideInstallButton();
         });
 
         // ═══════════════════════════════════════════════════
