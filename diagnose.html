@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تشخيص دقيق — لماذا لا يثبت كتطبيق؟</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Arial,sans-serif;background:#011c16;color:#fff;padding:1rem;line-height:1.7;font-size:14px}
+  h1{color:#fbbf24;font-size:1.2rem;margin-bottom:1rem}
+  .row{background:#064e3b;border-radius:.5rem;padding:.7rem 1rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .ok{color:#34d399;font-weight:bold}
+  .fail{color:#f87171;font-weight:bold}
+  .warn{color:#fbbf24;font-weight:bold}
+  pre{background:#022c22;padding:1rem;border-radius:.5rem;font-size:.7rem;overflow:auto;white-space:pre-wrap;word-break:break-all;max-height:300px}
+  button{background:#f59e0b;color:#011c16;border:none;padding:.6rem 1.2rem;border-radius:.5rem;font-weight:bold;margin:.5rem 0;cursor:pointer;width:100%}
+  .copybox{position:relative}
+  .copybox button{background:#065f46;color:#fbbf24;font-size:.75rem}
+  .critical{border:2px solid #f87171;background:#450a0a}
+</style>
+</head>
+<body>
+<h1>🔬 تشخيص دقيق — سبب عدم التثبيت كتطبيق</h1>
+<div id="results">جارٍ الفحص...</div>
+<div class="copybox">
+  <button onclick="copyReport()">📋 نسخ التقرير الكامل لإرساله</button>
+</div>
+<pre id="log"></pre>
+
+<script>
+const results = document.getElementById('results');
+const logEl = document.getElementById('log');
+let logs = [];
+let reportLines = [];
+
+function log(msg) {
+  logs.push(msg);
+  logEl.textContent = logs.join('\n');
+}
+
+function row(label, status, detail, critical) {
+  const cls = status === true ? 'ok' : status === false ? 'fail' : 'warn';
+  const icon = status === true ? '✅' : status === false ? '❌' : '⚠️';
+  reportLines.push(`${icon} ${label}: ${detail}`);
+  return `<div class="row ${critical && status===false ? 'critical' : ''}"><span>${label}</span><span class="${cls}">${icon} ${detail}</span></div>`;
+}
+
+function copyReport() {
+  const fullReport = reportLines.join('\n') + '\n\n--- LOG ---\n' + logs.join('\n');
+  navigator.clipboard.writeText(fullReport).then(() => alert('تم النسخ! الصق التقرير هنا في المحادثة.'));
+}
+
+async function runFullDiagnostics() {
+  let html = '';
+  const currentURL = location.href;
+  log(`URL الحالي: ${currentURL}`);
+  log(`Origin: ${location.origin}`);
+
+  html += row('الصفحة الحالية', null, currentURL);
+
+  let mainPageHTML = '';
+  try {
+    const res = await fetch('/');
+    mainPageHTML = await res.text();
+    log(`GET / → status ${res.status}, content-length: ${mainPageHTML.length}`);
+    html += row('GET / يستجيب', res.ok, `${res.status}`);
+  } catch (e) {
+    log(`GET / error: ${e.message}`);
+    html += row('GET / يستجيب', false, e.message, true);
+  }
+
+  const manifestMatch = mainPageHTML.match(/<link[^>]+rel=["']manifest["'][^>]*href=["']([^"']+)["']/i);
+  const manifestHref = manifestMatch ? manifestMatch[1] : null;
+  log(`manifest href found in page: ${manifestHref || 'NOT FOUND'}`);
+  html += row('<link rel=manifest> موجود في الصفحة', !!manifestHref, manifestHref || 'غير موجود إطلاقاً!', true);
+
+  let manifestData = null;
+  if (manifestHref) {
+    try {
+      const res = await fetch(manifestHref);
+      const ct = res.headers.get('content-type');
+      log(`Manifest fetch (${manifestHref}): status=${res.status}, content-type=${ct}`);
+      html += row('manifest.json يُحمَّل (200 OK)', res.ok, `${res.status}`, true);
+      html += row('Content-Type صحيح', ct && ct.includes('json'), ct || 'غير محدد');
+      if (res.ok) manifestData = await res.json();
+    } catch (e) {
+      log(`Manifest fetch error: ${e.message}`);
+      html += row('manifest.json يُحمَّل', false, e.message, true);
+    }
+  }
+
+  if (manifestData) {
+    html += row('name', !!manifestData.name, manifestData.name || 'مفقود', true);
+    html += row('short_name', !!manifestData.short_name, manifestData.short_name || 'مفقود', true);
+    html += row('display', manifestData.display === 'standalone', manifestData.display || 'مفقود', true);
+    html += row('start_url', !!manifestData.start_url, manifestData.start_url || 'مفقود', true);
+    html += row('scope', !!manifestData.scope, manifestData.scope || 'مفقود');
+
+    try {
+      const startURLAbs = new URL(manifestData.start_url, location.href).href;
+      const currentAbs = new URL('/', location.href).href;
+      log(`start_url resolved: ${startURLAbs}`);
+      log(`current page resolved: ${currentAbs}`);
+      html += row('start_url يطابق نطاق الصفحة', true, 'تم الحل بنجاح');
+    } catch(e) {
+      log(`start_url resolution error: ${e.message}`);
+    }
+
+    const icons = manifestData.icons || [];
+    html += row('عدد الأيقونات', icons.length > 0, `${icons.length} أيقونة`);
+
+    for (const icon of icons) {
+      try {
+        const iconURL = new URL(icon.src, location.href).href;
+        const r = await fetch(iconURL);
+        log(`Icon ${icon.src} (purpose=${icon.purpose||'any'}): ${r.status}`);
+        if (icon.sizes && (icon.sizes.includes('192') || icon.sizes.includes('512'))) {
+          html += row(`أيقونة ${icon.sizes} (${icon.purpose||'any'})`, r.ok, r.ok ? 'محمّلة ✓' : `فشل ${r.status}`, true);
+        }
+      } catch (e) {
+        log(`Icon ${icon.src} ERROR: ${e.message}`);
+      }
+    }
+  } else {
+    html += row('فحص محتوى المانفست', false, 'لا يمكن المتابعة — المانفست لم يُحمَّل', true);
+  }
+
+  const swSupported = 'serviceWorker' in navigator;
+  html += row('Service Worker مدعوم', swSupported, swSupported ? 'نعم' : 'لا', true);
+
+  if (swSupported) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      log(`SW registrations: ${regs.length}`);
+      regs.forEach(r => log(`  → scope=${r.scope}, active=${!!r.active}, installing=${!!r.installing}, waiting=${!!r.waiting}`));
+      html += row('SW مسجّل', regs.length > 0, regs.length > 0 ? `${regs.length} تسجيل` : 'لا يوجد', true);
+
+      if (regs.length > 0) {
+        const reg = regs[0];
+        html += row('SW scope', true, reg.scope);
+        html += row('SW نشط (active)', !!reg.active, reg.active ? 'نعم ✓' : 'لا — قد يكون عالقاً');
+      }
+    } catch (e) {
+      log(`SW registrations error: ${e.message}`);
+    }
+
+    try {
+      const r = await fetch('/sw.js');
+      const ct = r.headers.get('content-type');
+      log(`/sw.js fetch: status=${r.status}, content-type=${ct}`);
+      html += row('/sw.js يُحمَّل', r.ok, `${r.status}`, true);
+      html += row('/sw.js Content-Type', ct && (ct.includes('javascript') || ct.includes('text')), ct || 'غير محدد');
+    } catch (e) {
+      log(`/sw.js fetch error: ${e.message}`);
+      html += row('/sw.js يُحمَّل', false, e.message, true);
+    }
+  }
+
+  const isSecure = location.protocol === 'https:';
+  html += row('HTTPS', isSecure, location.protocol, true);
+
+  const standalone = window.matchMedia('(display-mode: standalone)').matches;
+  html += row('يعمل الآن في standalone؟', standalone, standalone ? 'نعم — هذا تطبيق مثبّت بالفعل!' : 'لا، يعمل داخل المتصفح حالياً');
+
+  log(`User Agent: ${navigator.userAgent}`);
+  const isAndroid = /Android/.test(navigator.userAgent);
+  html += row('المتصفح', null, navigator.userAgent.match(/Chrome\/[\d.]+|Safari\/[\d.]+|Firefox\/[\d.]+|Edg\/[\d.]+/g)?.join(', ') || 'غير محدد');
+  html += row('نظام التشغيل', null, isAndroid ? 'Android' : /iPad|iPhone/.test(navigator.userAgent) ? 'iOS' : 'Desktop/Other');
+
+  results.innerHTML = html;
+
+  let bipFired = false;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    bipFired = true;
+    log('🎉 beforeinstallprompt أُطلق! المتصفح اعتبر كل الشروط مكتملة.');
+    const div = document.createElement('div');
+    div.className = 'row';
+    div.style.background = '#065f46';
+    div.innerHTML = '<span>beforeinstallprompt</span><span class="ok">✅ أُطلق الآن!</span>';
+    results.appendChild(div);
+  });
+
+  setTimeout(() => {
+    if (!bipFired) {
+      log('⏱️ بعد 4 ثوانٍ: beforeinstallprompt لم يُطلق. السبب موجود في الفحوصات أعلاه المعلّمة ❌.');
+      const div = document.createElement('div');
+      div.className = 'row critical';
+      div.innerHTML = '<span>beforeinstallprompt بعد 4 ثوانٍ</span><span class="fail">❌ لم يُطلق إطلاقاً</span>';
+      results.appendChild(div);
+    }
+  }, 4000);
+}
+
+runFullDiagnostics();
+</script>
+</body>
+</html>

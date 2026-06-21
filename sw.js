@@ -1,10 +1,9 @@
 // ═══════════════════════════════════════════════════════════
-//  Service Worker — أنوار العترة المطهرة  v10.0
-//  استراتيجية: Cache-First للملفات المحلية + Network للـ CDN
-//  المسارات: مطلقة (Absolute) — يفترض النشر في جذر الدومين
+//  Service Worker — أنوار العترة المطهرة  v11.0
+//  إصلاح: أيقونات maskable بدون شفافية (سبب رفض التثبيت)
 // ═══════════════════════════════════════════════════════════
 
-const CACHE  = 'anwar-v10';
+const CACHE  = 'anwar-v11';
 
 const PRECACHE = [
   '/',
@@ -20,6 +19,8 @@ const PRECACHE = [
   '/icons/icon-192.png',
   '/icons/icon-384.png',
   '/icons/icon-512.png',
+  '/icons/icon-192-maskable.png',
+  '/icons/icon-512-maskable.png',
 ];
 
 // ── INSTALL: تخزين كل الملفات المحلية ────────────────────
