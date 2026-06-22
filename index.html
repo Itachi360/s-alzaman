@@ -2421,32 +2421,43 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
             return fallback.month;
         }
 
-function initializeHijriDatesAndAlarms() {
+        function initializeHijriDatesAndAlarms() {
     try {
-        // بما أننا وضعنا القيم (6 و محرم)، سيدخل هنا مباشرة
-        if (simulatedDay !== null && simulatedMonth !== null) {
-            const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
-            
-            // التأكد من أن التنسيق يطابق ما تريده
-            document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ`;
-            
+    const displayElement = document.getElementById("hijri-date-display");
+    if (!displayElement) return; // إذا لم يجد العنصر يخرج ولا يكسر الكود
+    
+    // وضع المحاكاة
+    if (simulatedDay !== null && simulatedMonth !== null) {
+        const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
+        displayElement.innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ`;
+        
+        if (typeof checkEvents === 'function') {
             checkEvents(simulatedDay, simulatedMonth);
-            return; 
         }
-        // ... بقية الكود التلقائي
-    } catch (e) {
-        console.error("Error updating date:", e);
+        return; 
     }
-}
-
-                const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-
-                const todayFormatted = formatter.format(new Date()); 
-                document.getElementById("hijri-date-display").innerText = todayFormatted;
+    
+    // الكود التلقائي في حال كانت القيم null
+    const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    const todayFormatted = formatter.format(new Date()); 
+    displayElement.innerText = todayFormatted;
+    
+    // تنفيذ checkEvents للأحداث التلقائية إذا لزم الأمر
+    if (typeof checkEvents === 'function') {
+        const parts = todayFormatted.split(' ');
+        const convertArabicNumerals = (str) => str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+        checkEvents(parseInt(convertArabicNumerals(parts[0])), parts[1]);
+    }
+    
+    } catch (e) {
+    console.error("خطأ في تحديث التاريخ الهجري:", e);
+    }
+    }
 
                 const parts = todayFormatted.split(' ');
                 const convertArabicNumerals = (str) => {
