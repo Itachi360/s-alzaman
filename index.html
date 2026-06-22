@@ -2422,42 +2422,22 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
         }
 
         function initializeHijriDatesAndAlarms() {
-    try {
-    const displayElement = document.getElementById("hijri-date-display");
-    if (!displayElement) return; // إذا لم يجد العنصر يخرج ولا يكسر الكود
-    
-    // وضع المحاكاة
-    if (simulatedDay !== null && simulatedMonth !== null) {
-        const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
-        displayElement.innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ`;
-        
-        if (typeof checkEvents === 'function') {
-            checkEvents(simulatedDay, simulatedMonth);
-        }
-        return; 
-    }
-    
-    // الكود التلقائي في حال كانت القيم null
-    const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    });
-    
-    const todayFormatted = formatter.format(new Date()); 
-    displayElement.innerText = todayFormatted;
-    
-    // تنفيذ checkEvents للأحداث التلقائية إذا لزم الأمر
-    if (typeof checkEvents === 'function') {
-        const parts = todayFormatted.split(' ');
-        const convertArabicNumerals = (str) => str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
-        checkEvents(parseInt(convertArabicNumerals(parts[0])), parts[1]);
-    }
-    
-    } catch (e) {
-    console.error("خطأ في تحديث التاريخ الهجري:", e);
-    }
-    }
+            try {
+                if (simulatedDay !== null && simulatedMonth !== null) {
+                    const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
+                    document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ (محاكاة)`;
+                    checkEvents(simulatedDay, simulatedMonth);
+                    return;
+                }
+
+                const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+
+                const todayFormatted = formatter.format(new Date()); 
+                document.getElementById("hijri-date-display").innerText = todayFormatted;
 
                 const parts = todayFormatted.split(' ');
                 const convertArabicNumerals = (str) => {
