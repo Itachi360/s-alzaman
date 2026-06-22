@@ -1880,8 +1880,8 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
 
         let loadedVoices = [];
         let lastMatchedEventText = ""; 
-        window.simulatedDay = 6;
-        window.simulatedMonth = 'محرم';
+        let simulatedDay = 6;
+        let simulatedMonth = 'محرم';
 
         // Support Details Configuration
         const supportConfig = {
@@ -2423,21 +2423,12 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
 
         function initializeHijriDatesAndAlarms() {
             try {
-                const display = document.getElementById("hijri-date-display");
-                if (display) {
-                    // محاكاة التاريخ
-                    const toArabic = (num) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-                    display.innerText = `${toArabic(window.simulatedDay)} ${window.simulatedMonth} ١٤٤٨ هـ`;
+                if (simulatedDay !== null && simulatedMonth !== null) {
+                    const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
+                    document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ (محاكاة)`;
+                    checkEvents(simulatedDay, simulatedMonth);
+                    return;
                 }
-                
-                // استدعاء الدوال الأخرى بأمان
-                if (typeof checkEvents === 'function') {
-                    checkEvents(window.simulatedDay, window.simulatedMonth);
-                }
-            } catch (err) {
-                console.error("خطأ في بدء التاريخ:", err);
-            }
-        }
 
                 const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
                     day: 'numeric',
