@@ -2123,26 +2123,42 @@ let manualHijriMonth = 'محرم';
 
         function initializeHijriDatesAndAlarms() {
             try {
+                // التحقق من وجود القيمتين معاً (اليوم والشهر)
                 if (simulatedDay !== null && simulatedMonth !== null) {
                     const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
-                    document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ (محاكاة)`;
+                    
+                    // عرض التاريخ المخصص
+                    document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ`;
+                    
+                    // تشغيل الأحداث بناءً على القيم المخصصة
                     checkEvents(simulatedDay, simulatedMonth);
-                    return;
+                    return; // الخروج لمنع تشغيل الكود التلقائي أدناه
                 }
-
+        
+                // الكود التلقائي (يعمل فقط إذا كانت القيم null)
                 const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric'
                 });
-
+        
                 const todayFormatted = formatter.format(new Date()); 
                 document.getElementById("hijri-date-display").innerText = todayFormatted;
-
+        
                 const parts = todayFormatted.split(' ');
                 const convertArabicNumerals = (str) => {
                     return str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
                 };
+                
+                // استخراج اليوم والشهر للتأكد من عمل checkEvents بشكل صحيح
+                const day = parseInt(convertArabicNumerals(parts[0]));
+                const month = parts[1];
+                checkEvents(day, month);
+        
+            } catch (e) {
+                console.error("Error updating date:", e);
+            }
+        }
 
                 let dayNum = parseInt(convertArabicNumerals(parts[0]));
                 let hijriMonth = parts[1];
