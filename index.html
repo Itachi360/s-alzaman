@@ -1572,10 +1572,16 @@
             rate: 0.8
         };
 
-        let loadedVoices = [];
-        let lastMatchedEventText = ""; 
-        let simulatedDay = 6;
-        let simulatedMonth = null;
+let loadedVoices = [];
+let lastMatchedEventText = ""; 
+
+// نترك المتغيرات كما كانت (null) لتظل تعمل تلقائياً مع الميلادي
+let simulatedDay = null;
+let simulatedMonth = null;
+
+// ونضيف متغيرات جديدة خاصة بالهجري إذا أردت فرض قيمة ثابتة
+let manualHijriDay = 6;
+let manualHijriMonth = 'محرم';
 
         // Support Details Configuration
         const supportConfig = {
