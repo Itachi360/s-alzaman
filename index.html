@@ -2421,14 +2421,23 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
             return fallback.month;
         }
 
-        function initializeHijriDatesAndAlarms() {
-            try {
-                if (simulatedDay !== null && simulatedMonth !== null) {
-                    const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
-                    document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ (محاكاة)`;
-                    checkEvents(simulatedDay, simulatedMonth);
-                    return;
-                }
+function initializeHijriDatesAndAlarms() {
+    try {
+        // بما أننا وضعنا القيم (6 و محرم)، سيدخل هنا مباشرة
+        if (simulatedDay !== null && simulatedMonth !== null) {
+            const toArabic = (num) => String(num).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
+            
+            // التأكد من أن التنسيق يطابق ما تريده
+            document.getElementById("hijri-date-display").innerText = `${toArabic(simulatedDay)} ${simulatedMonth} ١٤٤٨ هـ`;
+            
+            checkEvents(simulatedDay, simulatedMonth);
+            return; 
+        }
+        // ... بقية الكود التلقائي
+    } catch (e) {
+        console.error("Error updating date:", e);
+    }
+}
 
                 const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
                     day: 'numeric',
