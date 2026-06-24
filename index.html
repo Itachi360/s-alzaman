@@ -2044,18 +2044,111 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
 
             const timeline = document.getElementById("karbala-timeline");
             timeline.innerHTML = database.karbala.map(item => {
-                const isMourningDay = currentDay === item.dayNum && currentMonth === 'محرم';
-                const isArbaeenMatch = isWithinHussainMourning(currentDay, currentMonth);
 
-                let cardBg = "from-emerald-900/60 to-emerald-950 border-emerald-800/80";
-                if (isMourningDay) {
+            /*-----------------------------------------------------------------------------------------------------*/
+
+            /*----من اول الخط القطع الموجود في الاعلى الى اخر موجود في الاسفل كلة هذه كود لواجهة التطبيق يكون لونة احمر في يوم عاشوراء فقط 10*/
+            const isAshuraDay = currentMonth === 'محرم' && currentDay === 10;
+
+            /* 🌐 تأثير كامل للتطبيق (مرة واحدة فقط) */                                   
+            if (isAshuraDay) {
+                document.body.style.background = "#2b0000"; // أحمر عاشوراء
+            }
+
+            const timeline = document.getElementById("karbala-timeline");
+
+            timeline.innerHTML = database.karbala.map(item => {
+
+                /* 🧠 هل نحن في محرم أو صفر */
+                const isInMourningPeriod =
+                    (currentMonth === 'محرم') ||
+                    (currentMonth === 'صفر');
+
+                /* 🏴 فقط شهداء الطف */
+                const isKarbalaMartyr = item.isKarbalaMartyr === true;
+
+                /* 🔥 تأثير ممتد من يومه إلى اليوم الحالي */
+                const hussainMourningActive =
+                    isKarbalaMartyr &&
+                    isInMourningPeriod &&
+                    item.dayNum <= currentDay;
+
+                /* 🎨 الخلفية */
+                let cardBg = isAshuraDay
+                    ? "from-red-950 to-red-900 border-red-600 shadow-[0_0_30px_rgba(239,68,68,0.5)]"
+                    : "from-emerald-900/60 to-emerald-950 border-emerald-800/80";
+
+                if (hussainMourningActive) {
                     cardBg = "from-red-950 to-emerald-950 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.25)]";
                 }
 
-                const hussainMourningActive = (item.dayNum === 10 || item.dayNum === 7 || item.dayNum === 8 || item.dayNum === 9) && isArbaeenMatch;
-                const nameColorClass = hussainMourningActive ? 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse' : 'text-amber-400';
+                /* ✍️ لون الاسم */
+                const nameColorClass = (isAshuraDay || hussainMourningActive)
+                    ? 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse'
+                    : 'text-amber-400';
 
+                /* 🌧️ الدم / المطر */
                 let bloodContainer = '';
+
+                if (isAshuraDay || hussainMourningActive) {
+                    bloodContainer = `
+                        <div class="absolute inset-x-0 top-0 h-full overflow-hidden pointer-events-none">
+                            <div class="blood-drop" style="left: 15%; animation-delay: 0.3s; animation-duration: 2.2s;"></div>
+                            <div class="blood-drop" style="left: 75%; animation-delay: 1.1s; animation-duration: 2.8s;"></div>
+                        </div>
+                    `;
+                }
+
+                /* 📦 بناء الكرت */
+                return `
+                    <div class="card ${cardBg}">
+                        <h2 class="${nameColorClass}">${item.title}</h2>
+                        ${bloodContainer}
+                    </div>
+                `;
+            }).join("");
+
+            /*------------------------------------------------------------------------------------------*/
+                    /* 1️⃣ هل هذا يوم الحدث نفسه فقط */
+                const isMourningDay = currentMonth === 'محرم' && currentDay === item.dayNum;
+                /* 2️⃣ هل نحن في موسم العزاء (محرم أو صفر) */
+                const isInMourningPeriod =
+                    (currentMonth === 'محرم') ||
+                    (currentMonth === 'صفر');
+                
+                (currentDay === 7 || currentDay === 8 || currentDay === 9 || currentDay === 10);
+                
+                /* 🎨 الخلفية */
+                let cardBg = "from-emerald-900/60 to-emerald-950 border-emerald-800/80";// لون الخلفية
+                if (isMourningDay) {
+                    cardBg = "from-red-950 to-emerald-950 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.25)]";
+                }
+                /*شهداء الطف*/
+                const karbalaNames = [
+                    "الإمام العباس بن علي (ع)",
+                    "القاسم بن الحسن",
+                    "علي الأكبر",
+                    "الإمام الحسين"
+                ];
+                /* فقط شهداء الطف */
+                const isKarbalaMartyr = karbalaNames.includes(item.title);
+
+                /* 🔥 يمتد للأربعين فقط لهؤلاء *
+                    /* 3️⃣ هل هذا الحدث بدأ أو قبل يومه (يستمر للأربعين) */
+                const hussainMourningActive = isKarbalaMartyr && isInMourningPeriod && item.dayNum <= currentDay;
+                (
+                    (currentMonth === 'محرم' && currentDay >= item.dayNum)
+                    ||
+                    (currentMonth === 'صفر')
+                )
+                && item.dayNum <= 10;
+                 /* ✍️ لون الاسم */
+                const nameColorClass = hussainMourningActive ? 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse' : 'text-amber-400';
+                /* 🌧️ الدم / المطر */
+                let bloodContainer = '';
+                if (hussainMourningActive) {
+                    cardBg = "from-red-950 to-emerald-950 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.25)]"; //هذه مسؤول عن لون الخلفيةالدم والمطر
+                }
                 if (hussainMourningActive) {
                     bloodContainer = `
                         <div class="absolute inset-x-0 top-0 h-full overflow-hidden pointer-events-none">
@@ -2064,6 +2157,8 @@ button{font-family:inherit;cursor:pointer;background:none;border:none}
                         </div>
                     `;
                 }
+
+           ;
 
                 let timelineLabel = "رمز الفداء والجهاد المبارك";
                 if (item.dayNum === 7) {
