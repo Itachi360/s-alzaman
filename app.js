@@ -13,11 +13,11 @@ async function checkUpdate() {
     }
 
     if (data.version !== currentVersion) {
-        showUpdateBox(data.version);
+        showUpdate(data.version);
     }
 }
 
-function showUpdateBox(newVersion) {
+function showUpdate(newVersion) {
     const box = document.createElement("div");
 
     box.style = `
@@ -28,31 +28,36 @@ function showUpdateBox(newVersion) {
         color: white;
         padding: 15px;
         border-radius: 12px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        z-index: 99999;
-        font-family: sans-serif;
+        z-index: 999999;
     `;
 
     box.innerHTML = `
-        <p>🔔 يوجد تحديث جديد (${newVersion})</p>
-        <button id="updateNow">تحديث الآن</button>
+        <p>🔔 يوجد تحديث جديد</p>
+        <button id="update">تحديث الآن</button>
         <button id="later">لاحقًا</button>
     `;
 
     document.body.appendChild(box);
 
-    document.getElementById("updateNow").onclick = () => {
+    document.getElementById("update").onclick = async () => {
+
         localStorage.setItem("app_version", newVersion);
-        location.reload(true); // تحديث فوري
+
+        // 🔥 أهم سطر (يجبر PWA على التحديث)
+        if (navigator.serviceWorker) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (let reg of regs) {
+                await reg.update();
+            }
+        }
+
+        location.reload();
     };
 
     document.getElementById("later").onclick = () => {
-        box.remove(); // تجاهل التحديث
+        box.remove();
     };
 }
 
-// تشغيل الفحص كل 10 ثواني
 setInterval(checkUpdate, 10000);
-
-// أول تشغيل
 checkUpdate();
